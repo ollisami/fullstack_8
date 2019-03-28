@@ -19,6 +19,9 @@
   "homepage": "https://github.com/ollisami/fullstack_8#readme",
   "dependencies": {
     "apollo-server": "^2.4.8",
-    "graphql": "^14.1.1"
+    "graphql": "^14.1.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.4.20",
+    "mongoose-unique-validator": "^2.0.2"
   }
 }
