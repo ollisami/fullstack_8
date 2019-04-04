@@ -11,7 +11,7 @@ mongoose.set('useFindAndModify', false)
 const MONGODB_URI = 'mongodb://fullstack:test1234@ds127376.mlab.com:27376/fullstack_8'
 const JWT_SECRET = 'NEED_HERE_A_SECRET_KEY'
 
-console.log('commecting to', MONGODB_URI)
+console.log('connecting to', MONGODB_URI)
 
 mongoose.connect(MONGODB_URI, { useNewUrlParser: true })
   .then(() => {
@@ -52,6 +52,7 @@ const typeDefs = gql`
     authorCount: Int!
     allBooks(author: String, genre: String): [Book!]!
     allAuthors: [Author!]!
+    allGenres: [String]!
     me: User
   }
 
@@ -82,7 +83,7 @@ const resolvers = {
     bookCount: () => Book.collection.countDocuments(),
     authorCount: () => Author.collection.countDocuments(),
     allBooks: async (root, args) => {
-      let b = await Book.find({});
+      let b = await Book.find({})
       if (args.author) {
         const author = await Author.findOne({name: args.author})
         const byAuthor = (book) =>
@@ -98,8 +99,26 @@ const resolvers = {
       return b
     },
     allAuthors: () => Author.find({}),
+    allGenres: async (root, args) => {
+      let b = await Book.find({})
+      let genres = []
+      b.map(book => genres = Array.from(new Set(genres.concat(book.genres))))
+      return genres
+    },
     me: (root, args, context) => {
+      console.log('here')
       return context.currentUser
+    }
+  },
+
+  Book: {
+    author: async (root) => {
+      author = await Author.findOne({_id: root.author})
+      return {
+        name: author.name,
+        born: author.born,
+        bookCount: author.bookCount
+      }
     }
   },
 
@@ -116,7 +135,6 @@ const resolvers = {
 
   Mutation: {
     addBook: async (root, args, context) => {
-      const book = new Book({...args})
       const currentUser = context.currentUser
 
       if (!currentUser) {
@@ -128,14 +146,16 @@ const resolvers = {
           author = new Author({name: args.author, bookCount: 1})
           await author.save()
         }
-        book.author = author
+        let bookArgs = {...args}
+        bookArgs.author = author.id
+        const book = new Book({...bookArgs})
         await book.save()
+        return book
       } catch (error) {
         throw new UserInputError(error.message, {
           invalidArgs: args,
         })
       }
-      return book
     },
 
     editAuthor: async (root, args, context) => {
